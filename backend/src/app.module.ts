@@ -13,6 +13,7 @@ import {
   AlarmHistory,
   MissionAttempt,
 } from '@domain/entities';
+import { Friendship } from '@domain/entities/friendship.entity';
 
 // Repositories
 import {
@@ -22,6 +23,7 @@ import {
   AlarmHistoryRepository,
   MissionAttemptRepository,
 } from '@infrastructure/repositories';
+import { FriendshipRepository } from '@infrastructure/repositories/friendship.repository';
 
 // Repository Interfaces (for DI)
 import {
@@ -31,16 +33,26 @@ import {
   IAlarmHistoryRepository,
   IMissionAttemptRepository,
 } from '@domain/repositories';
+import { IFriendshipRepository } from '@domain/repositories/friendship.repository.interface';
 
 // Use Cases
 import { RegisterUserUseCase } from '@application/use-cases/auth/register-user.use-case';
 import { LoginUserUseCase } from '@application/use-cases/auth/login-user.use-case';
 import { CreateAlarmUseCase } from '@application/use-cases/alarm/create-alarm.use-case';
 import { UpdateFinancialProfileUseCase } from '@application/use-cases/user/update-financial-profile.use-case';
+import { GetWeatherUseCase } from '@application/use-cases/weather/get-weather.use-case';
+import { GetGlobalLeaderboardUseCase } from '@application/use-cases/leaderboard/get-global-leaderboard.use-case';
+import { GetFriendsLeaderboardUseCase } from '@application/use-cases/leaderboard/get-friends-leaderboard.use-case';
 
 // Controllers
 import { AuthController } from '@presentation/controllers/auth.controller';
 import { AlarmController } from '@presentation/controllers/alarm.controller';
+import { WeatherController } from '@presentation/controllers/weather.controller';
+import { LeaderboardController } from '@presentation/controllers/leaderboard.controller';
+
+// Services
+import { WeatherService } from '@infrastructure/services/weather.service';
+import { IWeatherService } from '@domain/services/weather.service.interface';
 
 // Strategies
 import { JwtStrategy } from '@presentation/strategies/jwt.strategy';
@@ -65,6 +77,7 @@ import { getTypeOrmConfig } from '@infrastructure/database/typeorm.config';
       AlarmMission,
       AlarmHistory,
       MissionAttempt,
+      Friendship,
     ]),
     PassportModule,
     JwtModule.registerAsync({
@@ -75,7 +88,7 @@ import { getTypeOrmConfig } from '@infrastructure/database/typeorm.config';
       }),
     }),
   ],
-  controllers: [AuthController, AlarmController],
+  controllers: [AuthController, AlarmController, WeatherController, LeaderboardController],
   providers: [
     // Strategies
     JwtStrategy,
@@ -101,6 +114,10 @@ import { getTypeOrmConfig } from '@infrastructure/database/typeorm.config';
       provide: 'IMissionAttemptRepository',
       useClass: MissionAttemptRepository,
     },
+    {
+      provide: 'IFriendshipRepository',
+      useClass: FriendshipRepository,
+    },
 
     // Use Cases
     {
@@ -124,6 +141,28 @@ import { getTypeOrmConfig } from '@infrastructure/database/typeorm.config';
       provide: UpdateFinancialProfileUseCase,
       useFactory: (userRepo: IUserRepository) => new UpdateFinancialProfileUseCase(userRepo),
       inject: ['IUserRepository'],
+    },
+    {
+      provide: GetWeatherUseCase,
+      useFactory: (weatherService: IWeatherService) => new GetWeatherUseCase(weatherService),
+      inject: ['IWeatherService'],
+    },
+    {
+      provide: GetGlobalLeaderboardUseCase,
+      useFactory: (userRepo: IUserRepository) => new GetGlobalLeaderboardUseCase(userRepo),
+      inject: ['IUserRepository'],
+    },
+    {
+      provide: GetFriendsLeaderboardUseCase,
+      useFactory: (userRepo: IUserRepository, friendshipRepo: IFriendshipRepository) =>
+        new GetFriendsLeaderboardUseCase(userRepo, friendshipRepo),
+      inject: ['IUserRepository', 'IFriendshipRepository'],
+    },
+
+    // Services
+    {
+      provide: 'IWeatherService',
+      useClass: WeatherService,
     },
   ],
 })
