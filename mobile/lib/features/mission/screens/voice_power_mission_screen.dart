@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:permission_handler/permission_handler.dart';
 import '../../../core/constants/app_colors.dart';
 
 class VoicePowerMissionScreen extends StatefulWidget {
@@ -9,7 +11,7 @@ class VoicePowerMissionScreen extends StatefulWidget {
   const VoicePowerMissionScreen({
     Key? key,
     required this.alarmId,
-    this.targetPhrase = '일어났다!',
+    this.targetPhrase = 'I woke up',
   }) : super(key: key);
 
   @override
@@ -23,64 +25,135 @@ class _VoicePowerMissionScreenState extends State<VoicePowerMissionScreen>
   double _volumeLevel = 0.0;
   bool _phraseDetected = false;
   late AnimationController _waveController;
+  late stt.SpeechToText _speech;
+  bool _speechEnabled = false;
+  String _recognizedWords = '';
 
   final List<String> _motivationalPhrases = [
-    '일어났다!',
-    '오늘도 화이팅!',
-    '나는 할 수 있다!',
-    '아침이다!',
-    '일어나자!',
+    'I woke up',
+    'Good morning',
+    'Let\'s go',
+    'Time to rise',
+    'New day',
   ];
 
   @override
   void initState() {
     super.initState();
+    _speech = stt.SpeechToText();
     _waveController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     )..repeat();
+    _initSpeech();
   }
 
   @override
   void dispose() {
     _waveController.dispose();
+    _speech.stop();
     super.dispose();
   }
 
-  void _startListening() {
-    setState(() {
-      _isListening = true;
-    });
+  Future<void> _initSpeech() async {
+    final status = await Permission.microphone.request();
 
-    // TODO: Implement speech recognition
-    // final speech = SpeechToText();
-    // await speech.initialize();
-    // speech.listen(onResult: (result) {
-    //   if (result.recognizedWords.contains(widget.targetPhrase)) {
-    //     _onPhraseDetected();
-    //   }
-    // });
-
-    // Simulate detection for now
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        _onPhraseDetected();
-      }
-    });
-
-    // Simulate volume changes
-    _simulateVolumeChanges();
+    if (status.isGranted) {
+      _speechEnabled = await _speech.initialize(
+        onError: (error) => print('Speech error: $error'),
+        onStatus: (status) => print('Speech status: $status'),
+      );
+      setState(() {});
+    }
   }
 
-  void _simulateVolumeChanges() {
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (_isListening && mounted && !_phraseDetected) {
+  void _startListening() async {
+    if (!_speechEnabled) {
+      await _initSpeech();
+      if (!_speechEnabled) {
+        _showPermissionError();
+        return;
+      }
+    }
+
+    setState(() {
+      _isListening = true;
+      _recognizedWords = '';
+    });
+
+    await _speech.listen(
+      onResult: (result) {
         setState(() {
+          _recognizedWords = result.recognizedWords.toLowerCase();
           _volumeLevel = Random().nextDouble();
         });
-        _simulateVolumeChanges();
+
+        // Check if any wake phrase was detected
+        if (_checkForWakePhrase(_recognizedWords)) {
+          _onPhraseDetected();
+        }
+      },
+      listenFor: const Duration(seconds: 10),
+      pauseFor: const Duration(seconds: 3),
+      cancelOnError: false,
+      listenMode: stt.ListenMode.confirmation,
+    );
+
+    // Auto-stop after 10 seconds
+    Future.delayed(const Duration(seconds: 10), () {
+      if (_isListening && !_phraseDetected && mounted) {
+        _speech.stop();
+        setState(() {
+          _isListening = false;
+        });
       }
     });
+  }
+
+  bool _checkForWakePhrase(String text) {
+    final lowerText = text.toLowerCase();
+    final lowerTarget = widget.targetPhrase.toLowerCase();
+
+    // Check for exact match or contains
+    if (lowerText.contains(lowerTarget)) {
+      return true;
+    }
+
+    // Check for any motivational phrase
+    for (final phrase in _motivationalPhrases) {
+      if (lowerText.contains(phrase.toLowerCase())) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  void _showPermissionError() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.cardBackground,
+        title: const Text('Microphone Permission',
+            style: TextStyle(color: AppColors.primary)),
+        content: const Text(
+            'Please grant microphone permission to use voice recognition.',
+            style: TextStyle(color: AppColors.textPrimary)),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              openAppSettings();
+            },
+            child: const Text('Settings'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _onPhraseDetected() {

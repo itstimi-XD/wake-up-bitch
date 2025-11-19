@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:pedometer/pedometer.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../../core/constants/app_colors.dart';
 
 class CoffeeRunMissionScreen extends StatefulWidget {
@@ -19,8 +21,10 @@ class CoffeeRunMissionScreen extends StatefulWidget {
 class _CoffeeRunMissionScreenState extends State<CoffeeRunMissionScreen>
     with SingleTickerProviderStateMixin {
   int _currentSteps = 0;
+  int _initialSteps = 0;
   late AnimationController _walkAnimationController;
-  Timer? _stepTimer;
+  StreamSubscription<StepCount>? _stepCountSubscription;
+  bool _permissionGranted = false;
 
   @override
   void initState() {
@@ -30,36 +34,77 @@ class _CoffeeRunMissionScreenState extends State<CoffeeRunMissionScreen>
       vsync: this,
     )..repeat(reverse: true);
 
-    // TODO: Initialize pedometer
-    // _initializePedometer();
-
-    // Simulate steps for now
-    _simulateSteps();
+    _requestPermissionAndInitialize();
   }
 
   @override
   void dispose() {
     _walkAnimationController.dispose();
-    _stepTimer?.cancel();
+    _stepCountSubscription?.cancel();
     super.dispose();
   }
 
-  void _simulateSteps() {
-    _stepTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
-      if (_currentSteps < widget.targetSteps) {
-        setState(() {
-          _currentSteps++;
-        });
+  Future<void> _requestPermissionAndInitialize() async {
+    final status = await Permission.activityRecognition.request();
 
-        if (_currentSteps >= widget.targetSteps) {
-          _onMissionComplete();
-        }
+    if (status.isGranted) {
+      setState(() {
+        _permissionGranted = true;
+      });
+      _initializePedometer();
+    } else {
+      setState(() {
+        _permissionGranted = false;
+      });
+    }
+  }
+
+  void _initializePedometer() {
+    _stepCountSubscription = Pedometer.stepCountStream.listen(
+      _onStepCount,
+      onError: _onStepCountError,
+    );
+  }
+
+  void _onStepCount(StepCount event) {
+    if (_initialSteps == 0) {
+      _initialSteps = event.steps;
+    }
+
+    final stepsSinceStart = event.steps - _initialSteps;
+
+    if (stepsSinceStart <= widget.targetSteps) {
+      setState(() {
+        _currentSteps = stepsSinceStart;
+      });
+
+      if (_currentSteps >= widget.targetSteps) {
+        _onMissionComplete();
       }
+    }
+  }
+
+  void _onStepCountError(error) {
+    print('Pedometer error: $error');
+    setState(() {
+      _permissionGranted = false;
     });
   }
 
+  void _manualStepIncrement() {
+    if (_currentSteps < widget.targetSteps) {
+      setState(() {
+        _currentSteps++;
+      });
+
+      if (_currentSteps >= widget.targetSteps) {
+        _onMissionComplete();
+      }
+    }
+  }
+
   void _onMissionComplete() {
-    _stepTimer?.cancel();
+    _stepCountSubscription?.cancel();
 
     showDialog(
       context: context,

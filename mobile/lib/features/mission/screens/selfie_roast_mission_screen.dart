@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../core/constants/app_colors.dart';
 
 class SelfieRoastMissionScreen extends StatefulWidget {
@@ -17,16 +18,17 @@ class SelfieRoastMissionScreen extends StatefulWidget {
 class _SelfieRoastMissionScreenState extends State<SelfieRoastMissionScreen> {
   bool _photoTaken = false;
   bool _isProcessing = false;
+  final ImagePicker _picker = ImagePicker();
 
   final List<String> _roastMessages = [
-    '와... 이게 사람이야? 좀비야? 😱',
-    '거울 보고 놀랐지? 나도 놀랐어 😂',
-    '이 얼굴로 출근할 거야? 용기 인정! 💪',
-    '머리가 왜 새둥지야? 🐦',
-    '눈이 어디갔어? 찾았다! ...겨우 😅',
-    '아침 얼굴 등급: F- 😵',
-    '부은 얼굴... 밤에 뭐 먹었어? 🍔',
-    '이게 바로 현실이야... 받아들여 😎',
+    'Wow... is that a human? Or a zombie? 😱',
+    'Look in the mirror! Even I\'m shocked 😂',
+    'Going to work with that face? Bold move! 💪',
+    'Why is your hair a bird\'s nest? 🐦',
+    'Where are your eyes? Found them! ...barely 😅',
+    'Morning face grade: F- 😵',
+    'That puffy face... what did you eat last night? 🍔',
+    'This is reality... accept it 😎',
   ];
 
   String _selectedRoast = '';
@@ -36,20 +38,42 @@ class _SelfieRoastMissionScreenState extends State<SelfieRoastMissionScreen> {
       _isProcessing = true;
     });
 
-    // TODO: Implement camera functionality
-    // final XFile? photo = await ImagePicker().pickImage(
-    //   source: ImageSource.camera,
-    //   preferredCameraDevice: CameraDevice.front,
-    // );
+    try {
+      final XFile? photo = await _picker.pickImage(
+        source: ImageSource.camera,
+        preferredCameraDevice: CameraDevice.front,
+        imageQuality: 50,
+      );
 
-    // Simulate processing delay
-    await Future.delayed(const Duration(seconds: 2));
+      if (photo != null) {
+        // Photo was taken successfully
+        await Future.delayed(const Duration(milliseconds: 500));
 
-    setState(() {
-      _photoTaken = true;
-      _isProcessing = false;
-      _selectedRoast = (_roastMessages..shuffle()).first;
-    });
+        if (mounted) {
+          setState(() {
+            _photoTaken = true;
+            _isProcessing = false;
+            _selectedRoast = (_roastMessages..shuffle()).first;
+          });
+        }
+      } else {
+        // User cancelled
+        if (mounted) {
+          setState(() {
+            _isProcessing = false;
+          });
+        }
+      }
+    } catch (e) {
+      // Camera error - still complete mission but show error message
+      if (mounted) {
+        setState(() {
+          _photoTaken = true;
+          _isProcessing = false;
+          _selectedRoast = 'Camera error, but I\'ll let you pass this time! 😅';
+        });
+      }
+    }
   }
 
   void _onComplete() {

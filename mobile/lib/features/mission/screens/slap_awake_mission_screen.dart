@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
+import 'package:shake/shake.dart';
 import '../../../core/constants/app_colors.dart';
 
 class SlapAwakeMissionScreen extends StatefulWidget {
@@ -23,9 +24,8 @@ class _SlapAwakeMissionScreenState extends State<SlapAwakeMissionScreen>
   late AnimationController _phoneAnimationController;
   final Random _random = Random();
   bool _isShaking = false;
-
-  // For accelerometer simulation (will be replaced with actual sensor data)
   double _shakeIntensity = 0.0;
+  ShakeDetector? _shakeDetector;
 
   @override
   void initState() {
@@ -39,19 +39,30 @@ class _SlapAwakeMissionScreenState extends State<SlapAwakeMissionScreen>
       vsync: this,
     )..repeat(reverse: true);
 
-    // TODO: Initialize accelerometer listener
-    // _initializeAccelerometer();
+    _initializeShakeDetector();
   }
 
   @override
   void dispose() {
+    _shakeDetector?.stopListening();
     _slapAnimationController.dispose();
     _phoneAnimationController.dispose();
     super.dispose();
   }
 
-  // This will be replaced with actual accelerometer data
-  void _simulateSlap() {
+  void _initializeShakeDetector() {
+    _shakeDetector = ShakeDetector.autoStart(
+      onPhoneShake: () {
+        _onShakeDetected();
+      },
+      minimumShakeCount: 1,
+      shakeSlopTimeMS: 500,
+      shakeCountResetTime: 3000,
+      shakeThresholdGravity: 2.7,
+    );
+  }
+
+  void _onShakeDetected() {
     if (_currentSlaps >= widget.targetSlaps) return;
 
     setState(() {
@@ -64,6 +75,11 @@ class _SlapAwakeMissionScreenState extends State<SlapAwakeMissionScreen>
     if (_currentSlaps >= widget.targetSlaps) {
       _onMissionComplete();
     }
+  }
+
+  // Also allow manual taps for testing
+  void _onManualTap() {
+    _onShakeDetected();
   }
 
   void _onMissionComplete() {
@@ -158,8 +174,8 @@ class _SlapAwakeMissionScreenState extends State<SlapAwakeMissionScreen>
                     );
                   },
                   child: GestureDetector(
-                    onTap: _simulateSlap,
-                    onPanUpdate: (_) => _simulateSlap(),
+                    onTap: _onManualTap,
+                    onPanUpdate: (_) => _onManualTap(),
                     child: Container(
                       width: 200,
                       height: 360,
