@@ -1,0 +1,6 @@
+export enum AlarmStatus {
+  TRIGGERED = 'TRIGGERED',
+  SNOOZED = 'SNOOZED',
+  DISMISSED = 'DISMISSED',
+  MISSED = 'MISSED',
+}
