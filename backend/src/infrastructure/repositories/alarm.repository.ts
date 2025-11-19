@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Alarm } from '@domain/entities';
 import { IAlarmRepository } from '@domain/repositories';
+import { NotFoundException } from '@shared/exceptions/base.exception';
 
 @Injectable()
 export class AlarmRepository implements IAlarmRepository {
@@ -43,7 +44,7 @@ export class AlarmRepository implements IAlarmRepository {
     await this.repository.update(id, data);
     const updated = await this.findById(id);
     if (!updated) {
-      throw new Error('Alarm not found after update');
+      throw new NotFoundException('Alarm not found after update');
     }
     return updated;
   }
@@ -55,7 +56,7 @@ export class AlarmRepository implements IAlarmRepository {
   async toggle(id: string): Promise<Alarm> {
     const alarm = await this.findById(id);
     if (!alarm) {
-      throw new Error('Alarm not found');
+      throw new NotFoundException('Alarm not found');
     }
     alarm.toggle();
     return this.repository.save(alarm);

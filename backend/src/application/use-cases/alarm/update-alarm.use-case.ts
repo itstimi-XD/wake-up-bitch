@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ForbiddenException } from '@nestjs/common';
 import { IAlarmRepository } from '@domain/repositories';
 import { Alarm } from '@domain/entities';
 import { NotFoundException } from '@shared/exceptions/base.exception';
@@ -27,7 +27,7 @@ export class UpdateAlarmUseCase {
     }
 
     if (alarm.userId !== userId) {
-      throw new NotFoundException('Alarm not found');
+      throw new ForbiddenException('You do not have permission to modify this alarm');
     }
 
     return this.alarmRepository.update(alarmId, dto);

@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { MissionAttempt } from '@domain/entities';
 import { IMissionAttemptRepository } from '@domain/repositories';
 import { MissionType } from '@shared/enums';
+import { NotFoundException } from '@shared/exceptions/base.exception';
 
 @Injectable()
 export class MissionAttemptRepository implements IMissionAttemptRepository {
@@ -47,7 +48,7 @@ export class MissionAttemptRepository implements IMissionAttemptRepository {
     await this.repository.update(id, data);
     const updated = await this.findById(id);
     if (!updated) {
-      throw new Error('MissionAttempt not found after update');
+      throw new NotFoundException('MissionAttempt not found after update');
     }
     return updated;
   }

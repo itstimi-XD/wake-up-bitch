@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '@domain/entities';
 import { IUserRepository } from '@domain/repositories';
+import { NotFoundException } from '@shared/exceptions/base.exception';
 
 @Injectable()
 export class UserRepository implements IUserRepository {
@@ -19,6 +20,10 @@ export class UserRepository implements IUserRepository {
     return this.repository.findOne({ where: { email } });
   }
 
+  async findByUsername(username: string): Promise<User | null> {
+    return this.repository.findOne({ where: { username } });
+  }
+
   async create(data: Partial<User>): Promise<User> {
     const user = this.repository.create(data);
     return this.repository.save(user);
@@ -28,7 +33,7 @@ export class UserRepository implements IUserRepository {
     await this.repository.update(id, data);
     const updated = await this.findById(id);
     if (!updated) {
-      throw new Error('User not found after update');
+      throw new NotFoundException('User not found after update');
     }
     return updated;
   }

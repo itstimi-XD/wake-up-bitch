@@ -16,10 +16,16 @@ export class RegisterUserUseCase {
   constructor(private readonly userRepository: IUserRepository) {}
 
   async execute(dto: RegisterUserDto): Promise<User> {
-    // Check if user already exists
-    const existingUser = await this.userRepository.findByEmail(dto.email);
-    if (existingUser) {
+    // Check if email already exists
+    const existingEmail = await this.userRepository.findByEmail(dto.email);
+    if (existingEmail) {
       throw new ConflictException('User with this email already exists');
+    }
+
+    // Check if username already exists
+    const existingUsername = await this.userRepository.findByUsername(dto.username);
+    if (existingUsername) {
+      throw new ConflictException('User with this username already exists');
     }
 
     // Hash password

@@ -1,8 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { JwtModule } from '@nestjs/jwt';
+import { JwtModule, JwtService } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 // Entities
 import {
@@ -66,6 +67,10 @@ import { getTypeOrmConfig } from '@infrastructure/database/typeorm.config';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    ThrottlerModule.forRoot([{
+      ttl: 60000, // 1 minute
+      limit: 10, // 10 requests per minute
+    }]),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => getTypeOrmConfig(configService),
@@ -133,9 +138,9 @@ import { getTypeOrmConfig } from '@infrastructure/database/typeorm.config';
     },
     {
       provide: LoginUserUseCase,
-      useFactory: (userRepo: IUserRepository, jwtService: any) =>
+      useFactory: (userRepo: IUserRepository, jwtService: JwtService) =>
         new LoginUserUseCase(userRepo, jwtService),
-      inject: ['IUserRepository', JwtModule],
+      inject: ['IUserRepository', JwtService],
     },
     {
       provide: CreateAlarmUseCase,

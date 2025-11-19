@@ -21,7 +21,7 @@ export class User {
   @Column({ name: 'password_hash', length: 255 })
   passwordHash: string;
 
-  @Column({ length: 50 })
+  @Column({ unique: true, length: 50 })
   username: string;
 
   @Column({ name: 'profile_image', type: 'text', nullable: true })
