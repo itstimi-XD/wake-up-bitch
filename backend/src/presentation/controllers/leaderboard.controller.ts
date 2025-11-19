@@ -20,6 +20,7 @@ import {
   GetLeaderboardQueryDto,
   LeaderboardResponseDto,
 } from '@presentation/dtos/leaderboard.dto';
+import { AuthenticatedRequest } from '@presentation/types/authenticated-request.interface';
 
 @ApiTags('Leaderboard')
 @Controller('leaderboard')
@@ -43,7 +44,7 @@ export class LeaderboardController {
     type: LeaderboardResponseDto,
   })
   async getGlobalLeaderboard(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Query() query: GetLeaderboardQueryDto,
   ): Promise<LeaderboardResponseDto> {
     const userId = req.user.userId;
@@ -66,7 +67,7 @@ export class LeaderboardController {
     type: LeaderboardResponseDto,
   })
   async getFriendsLeaderboard(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Query() query: GetLeaderboardQueryDto,
   ): Promise<LeaderboardResponseDto> {
     const userId = req.user.userId;

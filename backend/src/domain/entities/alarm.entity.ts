@@ -93,13 +93,33 @@ export class Alarm {
     if (!this.isScheduledForToday()) return false;
 
     const now = new Date();
-    const [hours, minutes] = this.time.split(':').map(Number);
+    const timeComponents = this.parseTime();
+    if (!timeComponents) return false;
+
+    const { hours, minutes } = timeComponents;
     const alarmTime = new Date();
     alarmTime.setHours(hours, minutes, 0, 0);
 
     // Check if current time is within 1 minute of alarm time
     const diff = Math.abs(now.getTime() - alarmTime.getTime());
     return diff < 60000; // 1 minute in milliseconds
+  }
+
+  private parseTime(): { hours: number; minutes: number } | null {
+    // Validate time format (HH:mm)
+    const timeRegex = /^([0-1]?[0-9]|2[0-3]):([0-5][0-9])$/;
+    if (!timeRegex.test(this.time)) {
+      return null;
+    }
+
+    const [hours, minutes] = this.time.split(':').map(Number);
+
+    // Additional validation
+    if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+      return null;
+    }
+
+    return { hours, minutes };
   }
 
   addMission(alarmMission: AlarmMission): void {

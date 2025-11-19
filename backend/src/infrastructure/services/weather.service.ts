@@ -120,6 +120,13 @@ export class WeatherService implements IWeatherService {
   }
 
   private mapToWeatherData(data: OpenWeatherMapResponse): WeatherData {
+    if (!data.weather || data.weather.length === 0) {
+      throw new HttpException(
+        'Invalid weather data received from API',
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
+    }
+
     return {
       temperature: Math.round(data.main.temp),
       feelsLike: Math.round(data.main.feels_like),

@@ -33,33 +33,45 @@ export class GetGlobalLeaderboardUseCase {
     limit: number = 50,
     offset: number = 0,
   ): Promise<LeaderboardResponse> {
-    // Get all users sorted by points
-    const allUsers = await this.userRepository.findAll();
+    // Get top users sorted by points (database-level sorting and pagination)
+    const topUsers = await this.userRepository.findTopByPoints(limit, offset);
 
-    // Calculate leaderboard entries
-    const leaderboardEntries: LeaderboardEntry[] = allUsers
-      .map((user) => this._mapUserToLeaderboardEntry(user))
-      .sort((a, b) => b.totalPoints - a.totalPoints)
-      .map((entry, index) => ({
-        ...entry,
-        rank: index + 1,
-      }));
+    // Calculate leaderboard entries with proper ranking
+    const leaderboardEntries: LeaderboardEntry[] = topUsers.map((user, index) => ({
+      ...this._mapUserToLeaderboardEntry(user),
+      rank: offset + index + 1, // Calculate rank based on offset
+    }));
 
-    // Get paginated results
-    const paginatedLeaderboard = leaderboardEntries.slice(
-      offset,
-      offset + limit,
-    );
+    // Get current user separately if not in top results
+    let currentUserEntry: LeaderboardEntry | undefined;
+    const currentUser = await this.userRepository.findById(userId);
 
-    // Find current user's position
-    const currentUserEntry = leaderboardEntries.find(
-      (entry) => entry.userId === userId,
-    );
+    if (currentUser) {
+      // Check if user is in the current page
+      const userInPage = leaderboardEntries.find((entry) => entry.userId === userId);
+
+      if (userInPage) {
+        currentUserEntry = userInPage;
+      } else {
+        // Calculate user's actual rank efficiently using database query
+        const userRank = await this.userRepository.getUserRankByPoints(userId);
+
+        if (userRank !== null) {
+          currentUserEntry = {
+            ...this._mapUserToLeaderboardEntry(currentUser),
+            rank: userRank,
+          };
+        }
+      }
+    }
+
+    // Get total player count
+    const totalPlayers = await this.userRepository.countAll();
 
     return {
-      leaderboard: paginatedLeaderboard,
+      leaderboard: leaderboardEntries,
       currentUser: currentUserEntry,
-      totalPlayers: leaderboardEntries.length,
+      totalPlayers,
     };
   }
 

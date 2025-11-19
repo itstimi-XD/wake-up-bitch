@@ -40,7 +40,7 @@ export class AlarmMission {
 
   // Domain methods
   updateConfig(config: Record<string, any>): void {
-    this.config = { ...this.config, ...config };
+    this.config = this.config ? { ...this.config, ...config } : config;
   }
 
   changeDifficulty(newDifficulty: DifficultyLevel): void {

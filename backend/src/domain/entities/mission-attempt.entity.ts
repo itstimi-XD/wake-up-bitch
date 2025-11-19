@@ -61,7 +61,7 @@ export class MissionAttempt {
       this.score = score;
     }
     if (data) {
-      this.data = { ...this.data, ...data };
+      this.data = this.data ? { ...this.data, ...data } : data;
     }
   }
 
@@ -85,6 +85,6 @@ export class MissionAttempt {
   }
 
   updateData(data: Record<string, any>): void {
-    this.data = { ...this.data, ...data };
+    this.data = this.data ? { ...this.data, ...data } : data;
   }
 }
