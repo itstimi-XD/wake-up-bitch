@@ -9,14 +9,29 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
-import { CreateAlarmUseCase } from '@application/use-cases/alarm/create-alarm.use-case';
+import {
+  CreateAlarmUseCase,
+  GetUserAlarmsUseCase,
+  GetAlarmByIdUseCase,
+  UpdateAlarmUseCase,
+  DeleteAlarmUseCase,
+  ToggleAlarmUseCase,
+} from '@application/use-cases/alarm';
 import { CreateAlarmDto } from '../dto/alarm/create-alarm.dto';
+import { UpdateAlarmDto } from '../dto/alarm/update-alarm.dto';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 
 @Controller('alarms')
 @UseGuards(JwtAuthGuard)
 export class AlarmController {
-  constructor(private readonly createAlarmUseCase: CreateAlarmUseCase) {}
+  constructor(
+    private readonly createAlarmUseCase: CreateAlarmUseCase,
+    private readonly getUserAlarmsUseCase: GetUserAlarmsUseCase,
+    private readonly getAlarmByIdUseCase: GetAlarmByIdUseCase,
+    private readonly updateAlarmUseCase: UpdateAlarmUseCase,
+    private readonly deleteAlarmUseCase: DeleteAlarmUseCase,
+    private readonly toggleAlarmUseCase: ToggleAlarmUseCase,
+  ) {}
 
   @Post()
   async create(@Request() req, @Body() dto: CreateAlarmDto) {
@@ -26,29 +41,33 @@ export class AlarmController {
     });
   }
 
-  // More endpoints will be added later
   @Get()
   async findAll(@Request() req) {
-    return { message: 'Get all alarms for user', userId: req.user.sub };
+    return this.getUserAlarmsUseCase.execute(req.user.sub);
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    return { message: 'Get alarm by id', id };
+  async findOne(@Request() req, @Param('id') id: string) {
+    return this.getAlarmByIdUseCase.execute(id, req.user.sub);
   }
 
   @Put(':id')
-  async update(@Param('id') id: string, @Body() dto: any) {
-    return { message: 'Update alarm', id, dto };
+  async update(
+    @Request() req,
+    @Param('id') id: string,
+    @Body() dto: UpdateAlarmDto,
+  ) {
+    return this.updateAlarmUseCase.execute(id, req.user.sub, dto);
   }
 
   @Delete(':id')
-  async remove(@Param('id') id: string) {
-    return { message: 'Delete alarm', id };
+  async remove(@Request() req, @Param('id') id: string) {
+    await this.deleteAlarmUseCase.execute(id, req.user.sub);
+    return { message: 'Alarm deleted successfully' };
   }
 
   @Put(':id/toggle')
-  async toggle(@Param('id') id: string) {
-    return { message: 'Toggle alarm', id };
+  async toggle(@Request() req, @Param('id') id: string) {
+    return this.toggleAlarmUseCase.execute(id, req.user.sub);
   }
 }
