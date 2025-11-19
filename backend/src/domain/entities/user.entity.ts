@@ -30,6 +30,31 @@ export class User {
   @Column({ length: 50, default: 'UTC' })
   timezone: string;
 
+  @Column({ name: 'fcm_token', type: 'text', nullable: true })
+  fcmToken: string | null;
+
+  @Column({ name: 'avatar', type: 'text', nullable: true })
+  avatar: string | null;
+
+  // Gamification
+  @Column({ type: 'integer', default: 0 })
+  points: number;
+
+  @Column({ name: 'weekly_points', type: 'integer', default: 0 })
+  weeklyPoints: number;
+
+  @Column({ name: 'successful_alarms', type: 'integer', default: 0 })
+  successfulAlarms: number;
+
+  @Column({ name: 'failed_alarms', type: 'integer', default: 0 })
+  failedAlarms: number;
+
+  @Column({ name: 'current_streak', type: 'integer', default: 0 })
+  currentStreak: number;
+
+  @Column({ name: 'longest_streak', type: 'integer', default: 0 })
+  longestStreak: number;
+
   // Financial profile for BILLS_DUE mission
   @Column({ type: 'jsonb', nullable: true, name: 'financial_profile' })
   financialProfile: {
